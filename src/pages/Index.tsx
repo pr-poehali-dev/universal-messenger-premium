@@ -31,8 +31,6 @@ const chats: Chat[] = [
   { id: 1, name: 'Александра', avatar: '', lastMessage: 'Отправила голосовое сообщение', time: '14:32', unread: 3, online: true },
   { id: 2, name: 'Команда проекта', avatar: '', lastMessage: 'Марк: Встреча в 15:00', time: '13:20', unread: 5, online: false },
   { id: 3, name: 'Дмитрий', avatar: '', lastMessage: 'Созвон завтра?', time: '12:05', online: true },
-  { id: 4, name: 'Мама ❤️', avatar: '', lastMessage: 'Не забудь позвонить', time: 'Вчера', online: false },
-  { id: 5, name: 'Анна Смирнова', avatar: '', lastMessage: 'Спасибо за помощь!', time: 'Вчера', online: true },
 ];
 
 const calls: Call[] = [
@@ -46,6 +44,12 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('chats');
   const [showPremium, setShowPremium] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+  const [channelName, setChannelName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [authStep, setAuthStep] = useState<'phone' | 'code'>('phone');
 
   const filteredChats = chats.filter(chat => 
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -68,6 +72,14 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowPhoneAuth(true)}
+                className="hover:bg-accent/10 transition-all"
+              >
+                <Icon name="UserPlus" size={20} />
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -350,10 +362,174 @@ const Index = () => {
             <Button 
               className="fixed bottom-6 right-6 w-16 h-16 rounded-full bg-gradient-to-r from-primary via-secondary to-accent hover:opacity-90 shadow-2xl transition-all hover:scale-110"
               size="icon"
+              onClick={() => setShowCreateChannel(true)}
             >
               <Icon name="Plus" size={28} className="text-white" />
             </Button>
           </>
+        )}
+
+        {showCreateChannel && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 animate-scale-in border-2 border-primary/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Создать канал</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowCreateChannel(false)}>
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Название канала</label>
+                  <Input 
+                    placeholder="Введите название канала"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Описание</label>
+                  <Input 
+                    placeholder="О чём ваш канал?"
+                    className="h-12"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium block">Тип канала</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className="p-4 cursor-pointer hover:bg-primary/5 transition-all border-2 border-primary/20">
+                      <div className="flex flex-col items-center gap-2">
+                        <Icon name="Users" size={24} className="text-primary" />
+                        <span className="text-sm font-medium">Публичный</span>
+                      </div>
+                    </Card>
+                    <Card className="p-4 cursor-pointer hover:bg-secondary/5 transition-all border-2 border-transparent">
+                      <div className="flex flex-col items-center gap-2">
+                        <Icon name="Lock" size={24} className="text-secondary" />
+                        <span className="text-sm font-medium">Приватный</span>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+
+                <Button 
+                  className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                  onClick={() => {
+                    setShowCreateChannel(false);
+                    setChannelName('');
+                  }}
+                >
+                  <Icon name="Plus" size={20} className="mr-2" />
+                  Создать канал
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {showPhoneAuth && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 animate-scale-in border-2 border-primary/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Регистрация</h3>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  setShowPhoneAuth(false);
+                  setAuthStep('phone');
+                  setPhoneNumber('');
+                  setVerificationCode('');
+                }}>
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+
+              {authStep === 'phone' ? (
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary mb-4">
+                      <Icon name="Phone" size={32} className="text-white" />
+                    </div>
+                    <p className="text-muted-foreground">
+                      Введите номер телефона для регистрации
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Номер телефона</label>
+                    <Input 
+                      type="tel"
+                      placeholder="+7 (___) ___-__-__"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="h-12 text-lg"
+                    />
+                  </div>
+
+                  <Button 
+                    className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                    onClick={() => setAuthStep('code')}
+                    disabled={phoneNumber.length < 10}
+                  >
+                    Получить код
+                  </Button>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    Нажимая кнопку, вы соглашаетесь с условиями использования
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-secondary to-accent mb-4">
+                      <Icon name="MessageSquare" size={32} className="text-white" />
+                    </div>
+                    <p className="text-muted-foreground">
+                      Введите код из SMS
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Отправлен на {phoneNumber}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Код подтверждения</label>
+                    <Input 
+                      type="text"
+                      placeholder="● ● ● ● ● ●"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="h-12 text-lg text-center tracking-widest"
+                      maxLength={6}
+                    />
+                  </div>
+
+                  <Button 
+                    className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                    onClick={() => {
+                      setShowPhoneAuth(false);
+                      setAuthStep('phone');
+                      setPhoneNumber('');
+                      setVerificationCode('');
+                    }}
+                    disabled={verificationCode.length < 6}
+                  >
+                    Подтвердить
+                  </Button>
+
+                  <Button 
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setAuthStep('phone')}
+                  >
+                    Изменить номер
+                  </Button>
+                </div>
+              )}
+            </Card>
+          </div>
         )}
       </div>
     </div>
