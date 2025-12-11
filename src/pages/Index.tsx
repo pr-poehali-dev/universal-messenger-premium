@@ -208,7 +208,8 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">TeleAss</h1>
-                <p className="text-sm text-muted-foreground">Непрерывная связь!</p>
+                <p className="text-sm text-muted-foreground">Непрерывная связь! V.0.05
+</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
