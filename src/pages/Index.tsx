@@ -207,9 +207,7 @@ const Index = () => {
                 <Icon name="MessageCircle" size={24} className="text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
-                  Messenger
-                </h1>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">TeleAss</h1>
                 <p className="text-sm text-muted-foreground">Связь без границ</p>
               </div>
             </div>
