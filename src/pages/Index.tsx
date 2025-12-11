@@ -15,6 +15,9 @@ interface Chat {
   time: string;
   unread?: number;
   online?: boolean;
+  isPremium?: boolean;
+  emojiStatus?: string;
+  hasStory?: boolean;
 }
 
 interface Call {
@@ -39,11 +42,34 @@ interface Message {
   text: string;
   sender: 'me' | 'other';
   time: string;
+  type?: 'text' | 'voice';
+  duration?: string;
+}
+
+interface Friend {
+  id: number;
+  name: string;
+  phone: string;
+  registered: boolean;
+}
+
+interface Story {
+  id: number;
+  userName: string;
+  avatar: string;
+  image: string;
+  time: string;
 }
 
 const chats: Chat[] = [
-  { id: 1, name: 'Александра', avatar: '', lastMessage: 'Отправила голосовое сообщение', time: '14:32', unread: 3, online: true },
-  { id: 2, name: 'Дмитрий', avatar: '', lastMessage: 'Созвон завтра?', time: '12:05', online: true },
+  { id: 1, name: 'Александра', avatar: '', lastMessage: 'Отправила голосовое сообщение', time: '14:32', unread: 3, online: true, isPremium: true, emojiStatus: '😎', hasStory: true },
+  { id: 2, name: 'Дмитрий', avatar: '', lastMessage: 'Созвон завтра?', time: '12:05', online: true, emojiStatus: '🚀', hasStory: false },
+];
+
+const stories: Story[] = [
+  { id: 1, userName: 'Александра', avatar: '', image: '', time: '2ч назад' },
+  { id: 2, userName: 'Мария', avatar: '', image: '', time: '5ч назад' },
+  { id: 3, userName: 'Иван', avatar: '', image: '', time: '12ч назад' },
 ];
 
 const calls: Call[] = [
@@ -80,6 +106,21 @@ const Index = () => {
   const [newMessage, setNewMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showInviteFriends, setShowInviteFriends] = useState(false);
+  const [showEmojiStatus, setShowEmojiStatus] = useState(false);
+  const [currentEmojiStatus, setCurrentEmojiStatus] = useState('🙂');
+  const [showStories, setShowStories] = useState(false);
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+
+  const friends: Friend[] = [
+    { id: 1, name: 'Анна Петрова', phone: '+7 999 123-45-67', registered: true },
+    { id: 2, name: 'Сергей Иванов', phone: '+7 999 765-43-21', registered: false },
+    { id: 3, name: 'Ольга Сидорова', phone: '+7 999 555-12-34', registered: true },
+  ];
+
+  const allEmojis = ['🙂', '😊', '😎', '🤩', '😍', '🤔', '😴', '🥳', '😤', '😭', '😂', '🤯'];
 
   const premiumEmojis = ['😎', '🔥', '⭐', '💎', '👑', '🚀', '💫', '✨', '🌟', '💯', '🎯', '🏆'];
 
@@ -117,6 +158,38 @@ const Index = () => {
       };
       setMessages([...messages, giftMsg]);
       setShowGifts(false);
+    }
+  };
+
+  const handleStartVoiceRecording = () => {
+    setIsRecordingVoice(true);
+    setRecordingDuration(0);
+    const interval = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+    (window as any).voiceInterval = interval;
+  };
+
+  const handleStopVoiceRecording = () => {
+    setIsRecordingVoice(false);
+    clearInterval((window as any).voiceInterval);
+    const voiceMsg: Message = {
+      id: messages.length + 1,
+      text: 'Голосовое сообщение',
+      sender: 'me',
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      type: 'voice',
+      duration: `${recordingDuration}с`
+    };
+    setMessages([...messages, voiceMsg]);
+    setRecordingDuration(0);
+  };
+
+  const handleInviteFriend = (friend: Friend) => {
+    if (friend.registered) {
+      alert(`Сообщение отправлено ${friend.name}`);
+    } else {
+      alert(`Приглашение отправлено на ${friend.phone}`);
     }
   };
 
@@ -261,6 +334,38 @@ const Index = () => {
               </TabsList>
 
               <TabsContent value="chats" className="space-y-4">
+                <div className="flex gap-3 overflow-x-auto pb-4 animate-slide-in">
+                  <Card 
+                    className="flex-shrink-0 w-20 h-20 p-2 cursor-pointer hover:bg-primary/5 transition-all flex flex-col items-center justify-center border-2 border-dashed border-primary/30"
+                    onClick={() => setShowStories(true)}
+                  >
+                    <Icon name="Plus" size={24} className="text-primary mb-1" />
+                    <span className="text-xs text-center">Сторис</span>
+                  </Card>
+                  {stories.map((story) => (
+                    <div 
+                      key={story.id} 
+                      className="flex-shrink-0 cursor-pointer"
+                      onClick={() => {
+                        setCurrentStoryIndex(story.id - 1);
+                        setShowStories(true);
+                      }}
+                    >
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-secondary to-accent p-[3px]">
+                          <Avatar className="w-full h-full border-2 border-background">
+                            <AvatarImage src={story.avatar} />
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
+                              {story.userName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                      <p className="text-xs text-center mt-1 truncate w-20">{story.userName}</p>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="relative animate-slide-in">
                   <Icon name="Search" size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                   <Input 
@@ -287,14 +392,22 @@ const Index = () => {
                               {chat.name[0]}
                             </AvatarFallback>
                           </Avatar>
+                          {chat.emojiStatus && (
+                            <span className="absolute -bottom-1 -right-1 text-lg bg-background rounded-full border-2 border-background">
+                              {chat.emojiStatus}
+                            </span>
+                          )}
                           {chat.online && (
-                            <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></span>
+                            <span className="absolute top-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold truncate">{chat.name}</h3>
-                            <span className="text-xs text-muted-foreground">{chat.time}</span>
+                            {chat.isPremium && (
+                              <Icon name="BadgeCheck" size={16} className="text-primary flex-shrink-0" />
+                            )}
+                            <span className="text-xs text-muted-foreground ml-auto">{chat.time}</span>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
                         </div>
@@ -349,27 +462,84 @@ const Index = () => {
               </TabsContent>
 
               <TabsContent value="contacts" className="space-y-4">
-                <Card className="p-8 text-center border-dashed border-2 animate-scale-in">
-                  <Icon name="UserPlus" size={48} className="mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">Добавьте контакты</h3>
-                  <p className="text-muted-foreground mb-4">Пригласите друзей для общения</p>
-                  <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white">
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Добавить контакт
-                  </Button>
+                <Card className="p-6 border-2 border-primary/20 animate-scale-in">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">Пригласить друзей</h3>
+                    <Button 
+                      size="sm"
+                      className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                      onClick={() => setShowInviteFriends(true)}
+                    >
+                      <Icon name="UserPlus" size={16} className="mr-2" />
+                      Пригласить
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Пригласите друзей и получите бонусы за каждого зарегистрированного пользователя
+                  </p>
                 </Card>
+
+                <div className="space-y-2">
+                  {friends.map((friend) => (
+                    <Card key={friend.id} className="p-4 hover:bg-accent/5 transition-all border-border/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12 border-2 border-primary/20">
+                            <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-semibold">
+                              {friend.name[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold">{friend.name}</h4>
+                            <p className="text-sm text-muted-foreground">{friend.phone}</p>
+                          </div>
+                        </div>
+                        {friend.registered ? (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleInviteFriend(friend)}
+                          >
+                            <Icon name="MessageSquare" size={16} className="mr-2" />
+                            Написать
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm"
+                            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                            onClick={() => handleInviteFriend(friend)}
+                          >
+                            <Icon name="Send" size={16} className="mr-2" />
+                            Пригласить
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </TabsContent>
 
               <TabsContent value="profile" className="space-y-4">
                 <Card className="p-6 animate-scale-in border-primary/20">
                   <div className="flex flex-col items-center text-center mb-6">
-                    <Avatar className="w-24 h-24 mb-4 border-4 border-primary/20">
-                      <AvatarImage src="" />
-                      <AvatarFallback className="bg-gradient-to-br from-primary via-secondary to-accent text-white text-3xl font-bold">
-                        В
-                      </AvatarFallback>
-                    </Avatar>
-                    <h2 className="text-2xl font-bold mb-1">Вы</h2>
+                    <div className="relative">
+                      <Avatar className="w-24 h-24 mb-4 border-4 border-primary/20">
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-gradient-to-br from-primary via-secondary to-accent text-white text-3xl font-bold">
+                          В
+                        </AvatarFallback>
+                      </Avatar>
+                      <div 
+                        className="absolute bottom-3 right-0 w-10 h-10 rounded-full bg-card border-2 border-background flex items-center justify-center cursor-pointer hover:scale-110 transition-all"
+                        onClick={() => setShowEmojiStatus(true)}
+                      >
+                        <span className="text-2xl">{currentEmojiStatus}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold">Вы</h2>
+                      <Icon name="BadgeCheck" size={20} className="text-primary" />
+                    </div>
                     <p className="text-muted-foreground">@your_username</p>
                     <Button 
                       variant="outline" 
@@ -643,13 +813,29 @@ const Index = () => {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className={`max-w-[70%] ${message.sender === 'me' ? 'order-2' : 'order-1'}`}>
-                      <div className={`p-4 rounded-2xl ${
-                        message.sender === 'me' 
-                          ? 'bg-gradient-to-r from-primary to-secondary text-white rounded-br-sm' 
-                          : 'bg-muted text-foreground rounded-bl-sm'
-                      }`}>
-                        <p className="text-sm">{message.text}</p>
-                      </div>
+                      {message.type === 'voice' ? (
+                        <div className={`p-3 rounded-2xl flex items-center gap-3 ${
+                          message.sender === 'me' 
+                            ? 'bg-gradient-to-r from-primary to-secondary text-white rounded-br-sm' 
+                            : 'bg-muted text-foreground rounded-bl-sm'
+                        }`}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+                            <Icon name="Play" size={16} />
+                          </Button>
+                          <div className="flex-1 h-8 bg-white/20 rounded-full relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/40" style={{ width: '60%' }}></div>
+                          </div>
+                          <span className="text-xs">{message.duration}</span>
+                        </div>
+                      ) : (
+                        <div className={`p-4 rounded-2xl ${
+                          message.sender === 'me' 
+                            ? 'bg-gradient-to-r from-primary to-secondary text-white rounded-br-sm' 
+                            : 'bg-muted text-foreground rounded-bl-sm'
+                        }`}>
+                          <p className="text-sm">{message.text}</p>
+                        </div>
+                      )}
                       <p className={`text-xs text-muted-foreground mt-1 ${
                         message.sender === 'me' ? 'text-right' : 'text-left'
                       }`}>{message.time}</p>
@@ -683,25 +869,60 @@ const Index = () => {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-                    <Icon name="Smile" size={20} className="text-muted-foreground" />
-                  </Button>
-                  <Input 
-                    placeholder="Написать сообщение..." 
-                    className="flex-1 h-12 bg-background border-border/50"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  />
-                  <Button 
-                    size="icon"
-                    className="h-12 w-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
-                    onClick={handleSendMessage}
-                  >
-                    <Icon name="Send" size={20} />
-                  </Button>
-                </div>
+                {isRecordingVoice ? (
+                  <div className="flex items-center gap-3 p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium">Запись... {recordingDuration}с</span>
+                    <Button 
+                      size="icon"
+                      className="ml-auto h-10 w-10 bg-red-500 hover:bg-red-600 text-white"
+                      onClick={handleStopVoiceRecording}
+                    >
+                      <Icon name="Square" size={16} />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                      <Icon name="Smile" size={20} className="text-muted-foreground" />
+                    </Button>
+                    {newMessage.trim() ? (
+                      <>
+                        <Input 
+                          placeholder="Написать сообщение..." 
+                          className="flex-1 h-12 bg-background border-border/50"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        />
+                        <Button 
+                          size="icon"
+                          className="h-12 w-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                          onClick={handleSendMessage}
+                        >
+                          <Icon name="Send" size={20} />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Input 
+                          placeholder="Написать сообщение..." 
+                          className="flex-1 h-12 bg-background border-border/50"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        />
+                        <Button 
+                          size="icon"
+                          className="h-12 w-12 bg-gradient-to-r from-accent to-secondary hover:opacity-90 text-white"
+                          onClick={handleStartVoiceRecording}
+                        >
+                          <Icon name="Mic" size={20} />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           </div>
@@ -789,6 +1010,147 @@ const Index = () => {
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+
+        {showEmojiStatus && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 animate-scale-in border-2 border-primary/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Выбрать статус</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowEmojiStatus(false)}>
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+
+              <p className="text-sm text-muted-foreground mb-4">
+                Установите эмодзи-статус, который будет виден всем контактам
+              </p>
+
+              <div className="grid grid-cols-6 gap-3">
+                {allEmojis.map((emoji, idx) => (
+                  <Button
+                    key={idx}
+                    variant="ghost"
+                    className="text-4xl hover:scale-125 transition-all h-16 w-16"
+                    onClick={() => {
+                      setCurrentEmojiStatus(emoji);
+                      setShowEmojiStatus(false);
+                    }}
+                  >
+                    {emoji}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {showStories && (
+          <div className="fixed inset-0 bg-black z-[70] flex items-center justify-center animate-fade-in">
+            <div className="w-full max-w-md h-full relative">
+              <div className="absolute top-4 left-4 right-4 flex gap-1">
+                {stories.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex-1 h-1 rounded-full ${idx === currentStoryIndex ? 'bg-white' : 'bg-white/30'}`}
+                  ></div>
+                ))}
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-secondary/40 to-accent/40 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <h2 className="text-4xl font-bold mb-4">{stories[currentStoryIndex]?.userName}</h2>
+                  <p className="text-6xl mb-4">📸</p>
+                  <p className="text-white/70">{stories[currentStoryIndex]?.time}</p>
+                </div>
+              </div>
+
+              <div className="absolute top-6 left-6">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-white">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
+                      {stories[currentStoryIndex]?.userName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h4 className="font-bold text-white">{stories[currentStoryIndex]?.userName}</h4>
+                    <p className="text-xs text-white/70">{stories[currentStoryIndex]?.time}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-6 right-6 text-white hover:bg-white/20"
+                onClick={() => setShowStories(false)}
+              >
+                <Icon name="X" size={24} />
+              </Button>
+
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentStoryIndex(Math.max(0, currentStoryIndex - 1))}
+                  disabled={currentStoryIndex === 0}
+                >
+                  <Icon name="ChevronLeft" size={28} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setCurrentStoryIndex(Math.min(stories.length - 1, currentStoryIndex + 1))}
+                  disabled={currentStoryIndex === stories.length - 1}
+                >
+                  <Icon name="ChevronRight" size={28} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showInviteFriends && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 animate-scale-in border-2 border-primary/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Пригласить друзей</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowInviteFriends(false)}>
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary mb-4">
+                  <Icon name="Users" size={32} className="text-white" />
+                </div>
+                <p className="text-muted-foreground">
+                  Получайте <span className="font-bold text-amber-500">100 🪙</span> за каждого приглашённого друга
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="p-4 bg-muted rounded-lg flex items-center justify-between">
+                  <span className="text-sm font-mono">https://msg.app/invite/ABC123</span>
+                  <Button size="sm" variant="outline">
+                    <Icon name="Copy" size={16} className="mr-2" />
+                    Копировать
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button className="bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-90 text-white">
+                  <Icon name="Share2" size={18} className="mr-2" />
+                  Telegram
+                </Button>
+                <Button className="bg-gradient-to-r from-green-500 to-green-600 hover:opacity-90 text-white">
+                  <Icon name="MessageCircle" size={18} className="mr-2" />
+                  WhatsApp
+                </Button>
+              </div>
+            </Card>
           </div>
         )}
       </div>
