@@ -27,17 +27,37 @@ interface Call {
   missed?: boolean;
 }
 
+interface Gift {
+  id: number;
+  name: string;
+  icon: string;
+  price: number;
+}
+
+interface Message {
+  id: number;
+  text: string;
+  sender: 'me' | 'other';
+  time: string;
+}
+
 const chats: Chat[] = [
   { id: 1, name: 'Александра', avatar: '', lastMessage: 'Отправила голосовое сообщение', time: '14:32', unread: 3, online: true },
-  { id: 2, name: 'Команда проекта', avatar: '', lastMessage: 'Марк: Встреча в 15:00', time: '13:20', unread: 5, online: false },
-  { id: 3, name: 'Дмитрий', avatar: '', lastMessage: 'Созвон завтра?', time: '12:05', online: true },
+  { id: 2, name: 'Дмитрий', avatar: '', lastMessage: 'Созвон завтра?', time: '12:05', online: true },
 ];
 
 const calls: Call[] = [
   { id: 1, name: 'Александра', avatar: '', type: 'video', time: 'Сегодня 14:20', duration: '45 мин' },
   { id: 2, name: 'Дмитрий', avatar: '', type: 'audio', time: 'Сегодня 11:15', duration: '12 мин' },
-  { id: 3, name: 'Команда проекта', avatar: '', type: 'video', time: 'Вчера', duration: '1 ч 23 мин' },
-  { id: 4, name: 'Анна Смирнова', avatar: '', type: 'audio', time: 'Вчера', duration: '5 мин', missed: true },
+];
+
+const gifts: Gift[] = [
+  { id: 1, name: 'Роза', icon: '🌹', price: 50 },
+  { id: 2, name: 'Торт', icon: '🎂', price: 100 },
+  { id: 3, name: 'Подарок', icon: '🎁', price: 150 },
+  { id: 4, name: 'Сердце', icon: '❤️', price: 200 },
+  { id: 5, name: 'Диамант', icon: '💎', price: 500 },
+  { id: 6, name: 'Корона', icon: '👑', price: 1000 },
 ];
 
 const Index = () => {
@@ -50,6 +70,55 @@ const Index = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [authStep, setAuthStep] = useState<'phone' | 'code'>('phone');
+  const [coins, setCoins] = useState(1250);
+  const [showGifts, setShowGifts] = useState(false);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 1, text: 'Привет! Как дела?', sender: 'other', time: '14:30' },
+    { id: 2, text: 'Отлично! Что у тебя?', sender: 'me', time: '14:31' },
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+
+  const premiumEmojis = ['😎', '🔥', '⭐', '💎', '👑', '🚀', '💫', '✨', '🌟', '💯', '🎯', '🏆'];
+
+  const handleOpenChat = (chat: Chat) => {
+    setSelectedChat(chat);
+  };
+
+  const handleCloseChat = () => {
+    setSelectedChat(null);
+    setShowGifts(false);
+    setShowEmojiPicker(false);
+  };
+
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      const newMsg: Message = {
+        id: messages.length + 1,
+        text: newMessage,
+        sender: 'me',
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages([...messages, newMsg]);
+      setNewMessage('');
+    }
+  };
+
+  const handleBuyGift = (gift: Gift) => {
+    if (coins >= gift.price) {
+      setCoins(coins - gift.price);
+      const giftMsg: Message = {
+        id: messages.length + 1,
+        text: `Подарок: ${gift.icon} ${gift.name}`,
+        sender: 'me',
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages([...messages, giftMsg]);
+      setShowGifts(false);
+    }
+  };
 
   const filteredChats = chats.filter(chat => 
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -72,6 +141,10 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Card className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-amber-500/20">
+                <span className="text-2xl">🪙</span>
+                <span className="font-bold text-lg">{coins}</span>
+              </Card>
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -204,6 +277,7 @@ const Index = () => {
                       key={chat.id} 
                       className="p-4 hover:bg-accent/5 transition-all cursor-pointer border-border/50 animate-fade-in hover:scale-[1.02] hover:shadow-lg"
                       style={{ animationDelay: `${index * 50}ms` }}
+                      onClick={() => handleOpenChat(chat)}
                     >
                       <div className="flex items-center gap-4">
                         <div className="relative">
@@ -529,6 +603,192 @@ const Index = () => {
                 </div>
               )}
             </Card>
+          </div>
+        )}
+
+        {selectedChat && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-3xl h-[600px] flex flex-col animate-scale-in border-2 border-primary/20">
+              <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary/5 to-secondary/5">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-primary/20">
+                    <AvatarImage src={selectedChat.avatar} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-semibold">
+                      {selectedChat.name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-bold text-lg">{selectedChat.name}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedChat.online ? 'В сети' : 'Не в сети'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => setShowVideoCall(true)}>
+                    <Icon name="Video" size={20} className="text-secondary" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => setShowGifts(true)}>
+                    <Icon name="Gift" size={20} className="text-accent" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="hover:bg-destructive/10" onClick={handleCloseChat}>
+                    <Icon name="X" size={20} />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {messages.map((message, index) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'} animate-slide-in`}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className={`max-w-[70%] ${message.sender === 'me' ? 'order-2' : 'order-1'}`}>
+                      <div className={`p-4 rounded-2xl ${
+                        message.sender === 'me' 
+                          ? 'bg-gradient-to-r from-primary to-secondary text-white rounded-br-sm' 
+                          : 'bg-muted text-foreground rounded-bl-sm'
+                      }`}>
+                        <p className="text-sm">{message.text}</p>
+                      </div>
+                      <p className={`text-xs text-muted-foreground mt-1 ${
+                        message.sender === 'me' ? 'text-right' : 'text-left'
+                      }`}>{message.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-border bg-gradient-to-r from-primary/5 to-secondary/5">
+                {showEmojiPicker && (
+                  <div className="mb-4 p-4 bg-card rounded-xl border border-border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon name="Crown" size={16} className="text-amber-500" />
+                      <span className="text-sm font-semibold">Premium эмодзи</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {premiumEmojis.map((emoji, idx) => (
+                        <Button
+                          key={idx}
+                          variant="ghost"
+                          className="text-2xl hover:scale-125 transition-all"
+                          onClick={() => {
+                            setNewMessage(newMessage + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                        >
+                          {emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="icon" className="hover:bg-primary/10" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                    <Icon name="Smile" size={20} className="text-muted-foreground" />
+                  </Button>
+                  <Input 
+                    placeholder="Написать сообщение..." 
+                    className="flex-1 h-12 bg-background border-border/50"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
+                  <Button 
+                    size="icon"
+                    className="h-12 w-12 bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white"
+                    onClick={handleSendMessage}
+                  >
+                    <Icon name="Send" size={20} />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {showGifts && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 animate-scale-in border-2 border-accent/20">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Отправить подарок</h3>
+                <Button variant="ghost" size="icon" onClick={() => setShowGifts(false)}>
+                  <Icon name="X" size={20} />
+                </Button>
+              </div>
+
+              <div className="mb-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center justify-between">
+                <span className="text-sm font-medium">Ваш баланс:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🪙</span>
+                  <span className="font-bold text-lg">{coins}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {gifts.map((gift) => (
+                  <Card 
+                    key={gift.id}
+                    className="p-4 cursor-pointer hover:bg-accent/5 transition-all hover:scale-105 border-border/50"
+                    onClick={() => handleBuyGift(gift)}
+                  >
+                    <div className="text-center space-y-2">
+                      <div className="text-5xl mb-2">{gift.icon}</div>
+                      <p className="font-medium text-sm">{gift.name}</p>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="text-lg">🪙</span>
+                        <span className="font-bold">{gift.price}</span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground mt-4">
+                Подарки появятся в чате после покупки
+              </p>
+            </Card>
+          </div>
+        )}
+
+        {showVideoCall && (
+          <div className="fixed inset-0 bg-black z-[70] flex items-center justify-center animate-fade-in">
+            <div className="w-full h-full relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                <div className="text-center">
+                  <Avatar className="w-32 h-32 mx-auto mb-6 border-4 border-white/20">
+                    <AvatarImage src={selectedChat?.avatar} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-4xl font-bold">
+                      {selectedChat?.name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h2 className="text-3xl font-bold text-white mb-2">{selectedChat?.name}</h2>
+                  <p className="text-white/70 text-lg">Видеозвонок...</p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
+                <Button
+                  size="icon"
+                  className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600"
+                  onClick={() => setShowVideoCall(false)}
+                >
+                  <Icon name="PhoneOff" size={28} className="text-white" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30"
+                >
+                  <Icon name="Mic" size={28} className="text-white" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="w-16 h-16 rounded-full bg-white/20 hover:bg-white/30"
+                >
+                  <Icon name="Video" size={28} className="text-white" />
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
